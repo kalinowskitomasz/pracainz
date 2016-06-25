@@ -8,9 +8,8 @@ import binascii
 
 if __name__ == "__main__":
     try:
-        sender = Sender()
-        # sender.send()
-        sender.handshake()
+        server = Server()
+        server.waitForConnection()
     except Exception as e:
         print(e)
 
