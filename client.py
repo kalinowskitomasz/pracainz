@@ -29,11 +29,19 @@ class Server:
 
 class Client:
 
-	ip = IP(src = '192.168.1.75')
-
 	def handshake(self):
-		tcpSyn = TCP(sport = 12345, dport = 80, flags = "S", ack = 0,seq = 0 )
-		tcpAck = TCP(sport = 12345, dport = 80, flags = "A", ack = 1,seq = 1 )
+		sport = random.randint(1024,65535)
+		# SYN
+		ip=IP(dst='127.0.0.1')
+		SYN=TCP(sport=sport,dport=80,flags='S',seq=1000)
+		SYNACK=sr1(ip/SYN)
+		# SYN-ACK
+		ACK=TCP(sport=sport, dport=80, flags='A', seq=SYNACK.ack + 1, ack=SYNACK.seq + 1)
+		send(ip/ACK)
+
+		ip = IP(dst = '192.168.1.75')
+		tcpSyn = TCP(sport = 12345, dport = 9000, flags = "S", ack = 0,seq = 0 )
+		tcpAck = TCP(sport = 12345, dport = 9000, flags = "A", ack = 1,seq = 1 )
 		sa = sr1(ip/tcpSyn)
 		if sa['TCP'].flags & (SYN & ACK):
 			send(ip/tcpAck)
