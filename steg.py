@@ -3,15 +3,38 @@ from scapy.all import *
 import random
 import binascii
 
-class Sender:
+FIN = 0x01
+SYN = 0x02
+RST = 0x04
+PSH = 0x08
+ACK = 0x10
+URG = 0x20
+ECE = 0x40
+CWR = 0x80
+
+class Server:
+	def synAck(pkt):
+		F = pkt['TCP'].flags
+		if F & SYN:
+			tcpSynAck = TCP(dport = 12345, sport = 80, flags = "SA", ack = 0,seq = 1 )
+			send(IP(dst = '192.168.1.162')/tcpSynAck1)
+
+	def waitForConnection(self):
+		sniff(iface="eth0", prn=synAck, store=0)
+		#tcp2 = TCP(dport = 12345, sport = 80, flags = "SA", ack = 0,seq = 1 )
+
+##############################################################################
+
+class Client:
+
+	ip = IP(src = '192.168.1.75')
 
 	def handshake(self):
-		tcp1 = TCP(sport = 12345, dport = 80, flags = "S", ack = 0,seq = 0 )
-		tcp2 = TCP(dport = 12345, sport = 80, flags = "SA", ack = 0,seq = 1 )
-		tcp3 = TCP(sport = 12345, dport = 80, flags = "A", ack = 1,seq = 1 )
-		send(IP()/tcp1)
-		send(IP()/tcp2)
-		send(IP()/tcp3)
+		tcpSyn = TCP(sport = 12345, dport = 80, flags = "S", ack = 0,seq = 0 )
+		tcpAck = TCP(sport = 12345, dport = 80, flags = "A", ack = 1,seq = 1 )
+		sa = sr1(ip/tcpSyn)
+		if sa['TCP'].flags & (SYN & ACK):
+			send(ip/tcpAck)
 
 	def ack(sendPort,destPort,Ack,Seq):
 		tcp = TCP(sport = sendPort, dport = destPort, flags = "A",seq=Seq,ack = Ack)
