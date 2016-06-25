@@ -12,19 +12,6 @@ URG = 0x20
 ECE = 0x40
 CWR = 0x80
 
-class Server:
-	def synAck(pkt):
-		F = pkt['TCP'].flags
-		if F & SYN:
-			tcpSynAck = TCP(dport = 12345, sport = 80, flags = "SA", ack = 0,seq = 1 )
-			send(IP(dst = '192.168.1.162')/tcpSynAck1)
-
-	def waitForConnection(self):
-		sniff(iface="eth0", prn=synAck, store=0)
-		#tcp2 = TCP(dport = 12345, sport = 80, flags = "SA", ack = 0,seq = 1 )
-
-##############################################################################
-
 class Client:
 
 	def handshake(self):
