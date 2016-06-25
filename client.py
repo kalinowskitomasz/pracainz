@@ -74,3 +74,10 @@ class Client:
 		pkt = TCP(options=[(0, messageBuffer)])
 		send(ip/pkt)
 		#print response
+
+if __name__ == "__main__":
+    try:
+        client = Client()
+        client.handshake()
+    except Exception as e:
+        print(e)

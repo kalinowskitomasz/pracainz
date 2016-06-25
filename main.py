@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from scapy.all import *
-from steg import *
+from client import *
+
 import random
 import binascii
 
@@ -8,8 +9,8 @@ import binascii
 
 if __name__ == "__main__":
     try:
-        server = Server()
-        server.waitForConnection()
+        client = Client()
+        client.handshake()
     except Exception as e:
         print(e)
 
