@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 from scapy.all import *
-import random
-import binascii
 
 FIN = 0x01
 SYN = 0x02
@@ -12,22 +10,30 @@ URG = 0x20
 ECE = 0x40
 CWR = 0x80
 
-serverPort = "9000"
+server_port = "9000"
+
 
 class Server:
-	def synAck(self,pkt):
-		F = pkt['TCP'].flags
-		if F & SYN:
-			tcpSynAck = TCP(dport = 12345, sport = 80, flags = "SA", ack = 0,seq = 1 )
-			send(IP(dst = "192.168.1.162")/tcpSynAck)
+	def __init__(self):
+		self.destination_port = 12345
+		self.seq = 0
+		self.ack = 0
+		self.is_connected = False
 
-	def waitForConnection(self):
-		sniff(iface="eth0", prn=self.synAck, store=0, filter = "tcp and port "+serverPort)
+	def send_syn_ack(self, pkt):
+		flag = pkt['TCP'].flags
+		if flag & SYN:
+			tcp_syn_ack = TCP(dport=self.destination_port, sport=80, flags="SA", ack=0, seq=1)
+			send(IP(dst="192.168.1.162")/tcp_syn_ack)
+
+
+	def wait_for_connection(self):
+		sniff(iface="en0", prn=self.send_syn_ack, store=0, filter="tcp and port "+server_port)
 
 
 if __name__ == "__main__":
 	try:
 		server = Server()
-		server.waitForConnection()
+		server.wait_for_connection()
 	except Exception as e:
-		print e
+		print(e)
