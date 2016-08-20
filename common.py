@@ -12,5 +12,7 @@ ECE = 0x40
 CWR = 0x80
 
 
-def generate_data():
-	return "abcd"
+def generate_data(n):
+	return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(n))
+
+
