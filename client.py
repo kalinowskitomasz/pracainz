@@ -91,6 +91,6 @@ class Client:
 if __name__ == "__main__":
 	try:
 		client = Client()
-		client.connect("192.168.1.193")
+		client.connect("192.168.1.75")
 	except Exception as e:
 		print(e)

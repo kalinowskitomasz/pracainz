@@ -11,8 +11,13 @@ URG = 0x20
 ECE = 0x40
 CWR = 0x80
 
+server_port = "9000"
+
 
 def generate_data(n):
 	return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(n))
 
+
+def enum(**enums):
+	return type('Enum', (), enums)
 
