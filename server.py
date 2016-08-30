@@ -1,103 +1,124 @@
 #!/usr/bin/env python
-
 from common import *
 from scapy.all import *
 
-
-interface = "en0"  # "en0"
 server_port = "9000"
 States = enum(LISTENING=0, SYN_SENT=1, SYN_RECEIVED=2, ESTABLISHED=3)
+PktType = enum(SYN=0, SYNACK=1, ACK=2, PSH=3, RST=4)
 
 
-class ConnectionManager:
+class SocketManager:
 
 	def __init__(self):
-		self.connections = []
+		self.sockets = {}
 
 	#############################################################
 
-	def __call__(self):
-		self.__start_listening()
+	def on_packet_received(self, pkt):
+		packet_type = SocketManager.packet_type(pkt)
+		if packet_type == PktType.SYN:
+			if pkt[TCP].sport in self.sockets:
+				# error handling
+				pass
+			else:
+				self.add_new_socket(self, pkt)
 
 	#############################################################
 
-	def on_socket_connected(self):
-		self.__start_new_listening_connection()
+	def add_new_socket(self, pkt):
+		ip = pkt[IP].src
+		port = pkt[TCP].sport
+		seq = pkt[TCP].seq
+		ack = pkt[TCP].ack
+		self.sockets[port] = Socket(port, ip, ack, seq)
 
 	#############################################################
 
-	def	__start_new_listening_socket(self):
-		self.connections.append(Connection(self))
-		self.connecitons[-1]()
+	@staticmethod
+	def packet_type(pkt):
+		tcp = pkt.getlayer(TCP)
+		return {
+			tcp.flags & SYN & ACK: PktType.SYNACK,
+			tcp.flags & SYN: PktType.SYN,
+			tcp.flags & ACK: PktType.ACK
+		}[pkt]
 
 	#############################################################
 
-	def __start_listening(self):
-		self.connections.append(Connection(self))
-		self.connections[0]()
+	def is_syn(self, pkt):
+		return pkt[TCP].flags & SYN
+
 
 #############################################################
 
 
-class Connection:
+class Socket:
+	connection_id = 0
 
-	def __init__(self, connection_manager):
-		self.connection_manager = connection_manager
-		self.socket = Socket(self)
+	def __init__(self, port, ip, ack, seq):
+		self.connection_id = Socket.connection_id
+		Socket.connection_id += 1
 
-	def __call__(self):
-		self.socket()
+		self.state = States.LISTENING
 
-	def set_filter(self, new_filter):
-		self.socket.filter = new_filter
+		self.port = port
+		self.ip = ip
+		self.ack = ack
+		self.seq = seq
+
 
 #############################################################
 
-
-class Socket(AnsweringMachine):
+class CommunicationProvider(AnsweringMachine):
 
 	function_name = "server"
-	#filter = "tcp port " + server_port
+	filter = "tcp port 9000"
 
 	#############################################################
 
-	def __init__(self, connection):
-		AnsweringMachine.__init__(self, filter="tcp dst port 9000 and tcp[tcpflags] & (tcp-syn) != 0 ")
-		self.connection = connection
-		self.state = States.LISTENING
-		self.client_port = None
-		self.client_ip = None
-
-	#############################################################
-
-	def __del__(self):
-		print "Connection on port %d ended" % self.client_port
-
-	#############################################################
-
-	def parse_options(self, joker="192.168.1.1", match=None):
-		if match is None:
-			self.match = {}
-		else:
-			self.match = match
-		self.joker = joker
+	def __init__(self, socket_manager):
+		self.socket_manager = socket_manager
 
 	#############################################################
 
 	def is_request(self, req):
+
+		self.socket_manager.on_packet_received(req)
+
+		if self.is_syn(req):
+			ip = req[IP].src
+			port = req[TCP].sport
+			ack = req[TCP].ack
+			seq = req[TCP].seq
+			self.socket_manager.on_new_connection(ip,port,ack,seq)
+
+
+
+
+
+
+
 		if self.state == States.LISTENING:
 			self.client_port = req[TCP].sport
 			self.client_ip = req[IP].src
 
 			self.state = States.SYN_RECEIVED
-			self.connection.set_filter("tcp dst port 9000 and tcp[tcpflags] & (tcp-syn) != 0 ")
+			#self.connection.set_filter("tcp dst port 9000 and tcp[tcpflags] & (tcp-ack) != 0 ")
 			return True
 
 		if self.state == States.SYN_RECEIVED:
-			self.filter = States.ESTABLISHED
+			self.state = States.ESTABLISHED
 			self.connection.set_filter("tcp dst port 9000 and tcp src port %d" % self.client_port)
-			print "Connection Established"
+			print "%d Connection Established" % self.id
+			self.connection.on_established()
 			return False
+
+
+	#############################################################
+
+
+	def print_reply(self, req, reply):
+		print "Connection %d: %s ==> %s" % (self.id, req.summary(), reply.summary())
 
 	#############################################################
 
