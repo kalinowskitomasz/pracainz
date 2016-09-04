@@ -2,7 +2,7 @@
 from common import *
 from scapy.all import *
 
-SERVER_PORT = 9000
+SERVER_PORT = 50000
 States = enum(LISTENING=0, SYN_SENT=1, SYN_RECEIVED=2, ESTABLISHED=3)
 PktType = enum(SYN=0, SYNACK=1, ACK=2, PSH=3, RST=4)
 
@@ -82,7 +82,7 @@ class Socket:
 class CommunicationProvider(AnsweringMachine):
 
 	function_name = "server"
-	filter = "tcp port 9000"
+	filter = "tcp port %d" % SERVER_PORT
 
 	#############################################################
 
