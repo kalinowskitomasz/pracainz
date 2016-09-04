@@ -15,13 +15,19 @@ CWR = 0x80
 
 server_port = 9000
 
-class Client:
 
+class Receiver(AnsweringMachine):
+	def __init__(self):
+
+
+################################################################
+
+class Sender:
 	def __init__(self):
 		self.server_ip = None
 		self.seq = 0
 		self.ack = 0
-		self.source_port = random.randint(1024, 65535)
+		self.source_port = random.randint(49152, 65535)
 
 	#############################################################
 
@@ -33,7 +39,7 @@ class Client:
 
 	def connect(self, server_ip):
 		self.server_ip = server_ip
-
+		self.server_ip = server_ip
 		self.__send_syn()
 		self.__send_ack()
 
@@ -60,8 +66,8 @@ class Client:
 	#############################################################
 
 	def send_simple_message(self):
-		pkt = TCP(options=[(0, "aaaa")], sport=send_port, dport=dest_port, flags="A", seq=Seq, ack=Ack)
-		send(IP() / pkt)
+		pkt = TCP(options=[(0, "aaaa")], sport=self.source_port, dport=server_port, flags="PA", seq=1, ack=1)
+		send(IP(dst = self.server_ip) / pkt)
 
 	#############################################################
 
@@ -90,7 +96,8 @@ class Client:
 
 if __name__ == "__main__":
 	try:
-		client = Client()
-		client.connect("192.168.1.75")
+		sender = Sender()
+		sender.connect("192.168.1.75")
+		sender.send_simple_message()
 	except Exception as e:
 		print(e)

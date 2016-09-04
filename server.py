@@ -15,11 +15,12 @@ class SocketManager:
 	#############################################################
 
 	def on_packet_received(self, pkt):
-		if pkt[TCP].sport in self.sockets:
-			return self.sockets[pkt[TCP].sport].on_packet_received(pkt)
+		packet_port = pkt[TCP].sport
+		if packet_port in self.sockets:
+			return self.sockets[packet_port].on_packet_received(pkt)
 		elif self.is_syn(pkt):
 			self.add_new_socket(pkt)
-			return self.sockets[pkt[TCP].sport].on_syn_received(pkt)
+			return self.sockets[packet_port].on_syn_received(pkt)
 		else:
 			return None
 
@@ -33,7 +34,7 @@ class SocketManager:
 
 	def add_new_socket(self, pkt):
 		port = pkt[TCP].sport
-		self.sockets[port] = Socket(pkt)
+		self.sockets[port] = Socket(pkt, self)
 
 	#############################################################
 
@@ -44,19 +45,23 @@ class SocketManager:
 
 #############################################################
 
-
 class Socket:
 	connection_id = 0
 
-	def __init__(self, pkt):
-
+	def __init__(self, pkt, socket_manager):
+		self.socket_manager = socket_manager
 		self.connection_id = Socket.connection_id
 		Socket.connection_id += 1
-		self.ip = None
-		self.port = None
+		self.ip = pkt[IP].src
+		self.port = pkt[TCP].sport
+		self.ack = 0
 
 	def on_packet_received(self, pkt):
-		self.__create_response(pkt)
+		if pkt[TCP].flags & (PSH | ACK):
+			ip = IP(dst=pkt[IP].src)
+			self.ack += len(pkt[TCP].payload)+1
+			tcp = TCP(flags="A", sport=SERVER_PORT, dport=pkt[TCP].sport, seq=pkt[TCP].ack, ack=self.ack)
+			return ip / tcp
 
 	def on_syn_received(self, pkt):
 		self.port = pkt[TCP].sport
@@ -64,8 +69,9 @@ class Socket:
 
 		ip = IP(dst=pkt[IP].src)
 		tcp = TCP(flags="SA", sport=SERVER_PORT, dport=pkt[TCP].sport, seq=0, ack=pkt[TCP].seq+1)
-		retVal = ip / tcp
-		return retVal
+		return ip / tcp
+
+
 
 	def __create_response(self, pkt):
 		pass
@@ -88,11 +94,6 @@ class CommunicationProvider(AnsweringMachine):
 
 	def is_request(self, req):
 		self.socket_manager.on_packet_received(req)
-
-	#############################################################
-
-	# def print_reply(self, req, reply):
-	# 	print "Connection %d: %s ==> %s" % (self.id, req.summary(), reply.summary())
 
 	#############################################################
 
