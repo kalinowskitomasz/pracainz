@@ -18,6 +18,7 @@ server_port = 9000
 
 class Receiver(AnsweringMachine):
 	def __init__(self):
+		pass
 
 
 ################################################################
@@ -66,7 +67,7 @@ class Sender:
 	#############################################################
 
 	def send_simple_message(self):
-		pkt = TCP(options=[(0, "aaaa")], sport=self.source_port, dport=server_port, flags="PA", seq=1, ack=1)
+		pkt = TCP(options=[(0, "aaaaaaaaaaaa")], sport=self.source_port, dport=server_port, flags="PA", seq=1, ack=1)
 		send(IP(dst = self.server_ip) / pkt)
 
 	#############################################################

@@ -2,7 +2,7 @@
 from common import *
 from scapy.all import *
 
-SERVER_PORT = 50000
+SERVER_PORT = 82
 States = enum(LISTENING=0, SYN_SENT=1, SYN_RECEIVED=2, ESTABLISHED=3)
 PktType = enum(SYN=0, SYNACK=1, ACK=2, PSH=3, RST=4)
 
@@ -59,13 +59,14 @@ class Socket:
 	def on_packet_received(self, pkt):
 		if pkt[TCP].flags & (PSH | ACK):
 			ip = IP(dst=pkt[IP].src)
-			self.ack += len(pkt[TCP].payload)+1
+			self.ack += len(pkt[TCP].payload)
 			tcp = TCP(flags="A", sport=SERVER_PORT, dport=pkt[TCP].sport, seq=pkt[TCP].ack, ack=self.ack)
-			return ip / tcp
+			return ip / tcp #/ Raw(load='aaaaaaaaaaaa')
 
 	def on_syn_received(self, pkt):
 		self.port = pkt[TCP].sport
 		self.ip = pkt[IP].src
+		self.ack += 1
 
 		ip = IP(dst=pkt[IP].src)
 		tcp = TCP(flags="SA", sport=SERVER_PORT, dport=pkt[TCP].sport, seq=0, ack=pkt[TCP].seq+1)
