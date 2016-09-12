@@ -13,15 +13,16 @@ URG = 0x20
 ECE = 0x40
 CWR = 0x80
 
-server_port = 9000
+server_port = 82
+
 
 
 class Receiver(AnsweringMachine):
 	def __init__(self):
 		pass
 
-
 ################################################################
+
 
 class Sender:
 	def __init__(self):
@@ -39,7 +40,6 @@ class Sender:
 	#############################################################
 
 	def connect(self, server_ip):
-		self.server_ip = server_ip
 		self.server_ip = server_ip
 		self.__send_syn()
 		self.__send_ack()
@@ -66,9 +66,15 @@ class Sender:
 
 	#############################################################
 
-	def send_simple_message(self):
-		pkt = TCP(options=[(0, "aaaaaaaaaaaa")], sport=self.source_port, dport=server_port, flags="PA", seq=1, ack=1)
-		send(IP(dst = self.server_ip) / pkt)
+	def send_simple_message(self, message):
+		data = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+		tcp = TCP(options=[(0, "aaaa")], sport=self.source_port, dport=server_port, flags="PA", seq=self.seq, ack=self.ack)
+		#pkt = TCP(sport=self.source_port, dport=server_port, flags="PA", seq=1, ack=self.ack)
+		pkt = IP(dst = self.server_ip) / tcp / Raw(load = data)
+		pkt.show()
+		ack_pkt = sr1(pkt)
+		self.seq = ack_pkt[TCP].ack
+
 
 	#############################################################
 
@@ -96,9 +102,9 @@ class Sender:
 
 
 if __name__ == "__main__":
-	try:
-		sender = Sender()
-		sender.connect("192.168.1.75")
-		sender.send_simple_message()
-	except Exception as e:
-		print(e)
+	sender = Sender()
+	sender.connect("192.168.1.193")
+	#while True:
+	#msg = raw_input("> ")
+	sender.send_simple_message("aaaa")
+	sender.send_simple_message("bbbb")
