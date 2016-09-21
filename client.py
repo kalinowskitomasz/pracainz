@@ -72,7 +72,7 @@ class Sender:
 		#pkt = TCP(sport=self.source_port, dport=server_port, flags="PA", seq=1, ack=self.ack)
 		pkt = IP(dst = self.server_ip) / tcp / Raw(load = data)
 		pkt.show()
-		ack_pkt = sr1(pkt)
+		ack_pkt = sr1(pkt, timeout=1)
 		self.seq = ack_pkt[TCP].ack
 
 
@@ -104,7 +104,7 @@ class Sender:
 if __name__ == "__main__":
 	sender = Sender()
 	sender.connect("192.168.1.193")
-	#while True:
-	#msg = raw_input("> ")
-	sender.send_simple_message("aaaa")
-	sender.send_simple_message("bbbb")
+	while True:
+		msg = raw_input("> ")
+		sender.send_simple_message("aaaa")
+	#sender.send_simple_message("bbbb")
