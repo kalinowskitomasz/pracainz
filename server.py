@@ -41,6 +41,7 @@ class SocketManager:
 	def send_message_to_all(self, pkt):
 		print "send message to all"
 		for port, sckt in self.sockets.iteritems():
+			#pass
 			sckt.send_packet(pkt)
 
 	#############################################################
@@ -65,11 +66,12 @@ class Socket:
 		self.seq = 0
 
 	def send_packet(self, pkt):
+		print "seq = %d" % self.seq
 		ip = IP(dst=self.ip)
 		tcp = TCP(flags="PA", sport=SERVER_PORT, dport=self.port, seq=self.seq, ack=self.ack)
 		data = 'aaaaaaaaaaa'
 		pkt_to_send = ip/tcp/Raw(load=data)
-		self.seq = len(data)
+		self.seq += len(data)
 		print "packet to send: " + pkt_to_send.summary()
 		send(pkt_to_send)
 
@@ -78,18 +80,26 @@ class Socket:
 		if pkt[TCP].flags & (PSH | ACK):
 			ip = IP(dst=pkt[IP].src)
 			self.ack += len(pkt[TCP].payload)
-			tcp = TCP(flags="A", sport=SERVER_PORT, dport=pkt[TCP].sport, seq=pkt[TCP].ack, ack=self.ack)
-			t = threading.Thread(target=self.socket_manager.send_message_to_all, args=pkt)
-			t.start()
-			return ip / tcp
+			#self.seq += 1
+			print "seq = %d " % self.seq
+			tcp = TCP(flags="A", sport=SERVER_PORT, dport=pkt[TCP].sport, seq=self.seq, ack=self.ack)
+			ack_packet = ip/tcp
+			ack_packet.show()
+			return ack_packet
+
+	def send_message_to_all(self, pkt):
+		# t = threading.Thread(target=self.socket_manager.send_message_to_all, args=pkt)
+		# t.start()
+		self.socket_manager.send_message_to_all(pkt)
 
 	def on_syn_received(self, pkt):
 		self.port = pkt[TCP].sport
 		self.ip = pkt[IP].src
 		self.ack += 1
-
+		print "seq = %d" % self.seq
 		ip = IP(dst=pkt[IP].src)
 		tcp = TCP(flags="SA", sport=SERVER_PORT, dport=pkt[TCP].sport, seq=self.seq, ack=pkt[TCP].seq+1)
+		self.seq = 1
 		return ip / tcp
 
 	def __create_response(self, pkt):
@@ -116,8 +126,9 @@ class CommunicationProvider(AnsweringMachine):
 		response = self.socket_manager.on_packet_received(pkt)
 		if response is None:
 			return
-		#reply = self.make_reply(pkt)
 		self.send_reply(response)
+		if not pkt[TCP].flags & SYN:
+			self.socket_manager.send_message_to_all(pkt)
 		if conf.verb >= 0:
 			self.print_reply(pkt, response)
 
