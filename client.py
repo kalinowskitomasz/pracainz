@@ -107,4 +107,4 @@ if __name__ == "__main__":
 	while True:
 		msg = raw_input("> ")
 		sender.send_simple_message("aaaa")
-	#sender.send_simple_message("bbbb")
+		#sender.send_simple_message("bbbb")
