@@ -33,6 +33,7 @@ class Receiver(AnsweringMachine):
 
 	def make_reply(self, req):
 		print "make reply: "
+		print req[Raw]
 		print req.summary()
 		ip = IP(dst=sender.server_ip)
 		sender.ack += len(req[TCP].payload)
@@ -113,15 +114,12 @@ class Sender:
 	#############################################################
 
 	def send_simple_message(self, message):
-		data = 'aaaaaaaaaaaaaaaa'
-		#self.sender = senderaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+		data = message
 		tcp = TCP(options=[(0, "aaaa")], sport=self.source_port, dport=server_port, flags="PA", seq=self.seq, ack=self.ack)
-		#pkt = TCP(sport=self.source_port, dport=server_port, flags="PA", seq=1, ack=self.ack)
 		pkt = IP(dst = self.server_ip) / tcp / Raw(load = data)
 		pkt.show()
 		ack_pkt = sr1(pkt)
 		self.seq = ack_pkt[TCP].ack
-
 
 	#############################################################
 
@@ -162,5 +160,5 @@ if __name__ == "__main__":
 
 	while True:
 		msg = raw_input("> ")
-		sender.send_simple_message("aaaa")
+		sender.send_simple_message(msg)
 		#sender.send_simple_message("bbbb")
