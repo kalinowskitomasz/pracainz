@@ -69,7 +69,7 @@ class Socket:
 		print "seq = %d" % self.seq
 		ip = IP(dst=self.ip)
 		tcp = TCP(flags="PA", sport=SERVER_PORT, dport=self.port, seq=self.seq, ack=self.ack)
-		data = 'aaaaaaaaaaa'
+		data = pkt[Raw]
 		pkt_to_send = ip/tcp/Raw(load=data)
 		self.seq += len(data)
 		print "packet to send: " + pkt_to_send.summary()
