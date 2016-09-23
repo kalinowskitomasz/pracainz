@@ -3,6 +3,7 @@
 from scapy.all import *
 import random
 import common
+import threading
 
 FIN = 0x01
 SYN = 0x02
@@ -16,10 +17,24 @@ CWR = 0x80
 server_port = 82
 
 
-
 class Receiver(AnsweringMachine):
-	def __init__(self):
-		pass
+
+	def __init__(self, sender):
+		self.sender = sender
+		fltr="tcp port %d" % sender.source_port
+		AnsweringMachine.__init__(self, filter=fltr, **kargs)
+
+	def print_reply(self, req, reply):
+		print "message: "
+
+	def is_request(self, req):
+		True
+
+	def make_reply(self, req):
+		ip = IP(dst=sender.server_ip)
+		tcp = TCP(sport=sender.source_port, dport=server_port, flags="A", ack=req.seq+1)
+		return ip/tcp
+
 
 ################################################################
 
@@ -42,7 +57,8 @@ class Sender:
 	def connect(self, server_ip):
 		self.server_ip = server_ip
 		self.__send_syn()
-		self.__send_ack()
+		return self.__send_ack()
+
 
 	#############################################################
 
@@ -55,7 +71,6 @@ class Sender:
 		syn_ack = sr1(syn)
 		self.seq = syn_ack.ack
 		self.ack = syn_ack.seq + 1
-		return syn_ack
 
 	#############################################################
 
@@ -63,6 +78,7 @@ class Sender:
 		ip = IP(dst=self.server_ip)
 		ack_pkt = ip / TCP(sport=self.source_port, dport=server_port, flags='A', seq=self.seq, ack=self.ack)
 		send(ip / ack_pkt)
+		return self.source_port
 
 	#############################################################
 
@@ -103,7 +119,10 @@ class Sender:
 
 if __name__ == "__main__":
 	sender = Sender()
-	sender.connect("192.168.1.193")
+	if sender.connect("192.168.1.193"):
+		responder = Receiver(sender)
+		t = threading.Thread(target=responder, args=sender)
+		t.start()
 	while True:
 		msg = raw_input("> ")
 		sender.send_simple_message("aaaa")

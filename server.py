@@ -80,7 +80,6 @@ class Socket:
 		if pkt[TCP].flags & (PSH | ACK):
 			ip = IP(dst=pkt[IP].src)
 			self.ack += len(pkt[TCP].payload)
-			#self.seq += 1
 			print "seq = %d " % self.seq
 			tcp = TCP(flags="A", sport=SERVER_PORT, dport=pkt[TCP].sport, seq=self.seq, ack=self.ack)
 			ack_packet = ip/tcp
