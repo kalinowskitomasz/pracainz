@@ -19,20 +19,24 @@ server_port = 82
 
 class Receiver(AnsweringMachine):
 
-	def __init__(self, sender):
-		self.sender = sender
-		fltr="tcp port %d" % sender.source_port
-		AnsweringMachine.__init__(self, filter=fltr, **kargs)
+	def __init__(self, sender, **kargs):
+		self.filter="tcp dst port %d" % sender.source_port
+		AnsweringMachine.__init__(self, **kargs)
+		print "Receiver started	"
 
 	def print_reply(self, req, reply):
 		print "message: "
 
 	def is_request(self, req):
-		True
+		print "request"
+		return True
 
 	def make_reply(self, req):
+		print "make reply: "
+		print req.summary()
 		ip = IP(dst=sender.server_ip)
-		tcp = TCP(sport=sender.source_port, dport=server_port, flags="A", ack=req.seq+1)
+		sender.ack += len(req[TCP].payload)
+		tcp = TCP(flags="A", sport=sender.source_port, dport=req[TCP].sport, seq=sender.seq, ack=sender.ack)
 		return ip/tcp
 
 
@@ -83,12 +87,13 @@ class Sender:
 	#############################################################
 
 	def send_simple_message(self, message):
-		data = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+		data = 'aaaaaaaaaaaaaaaa'
+		#self.sender = senderaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 		tcp = TCP(options=[(0, "aaaa")], sport=self.source_port, dport=server_port, flags="PA", seq=self.seq, ack=self.ack)
 		#pkt = TCP(sport=self.source_port, dport=server_port, flags="PA", seq=1, ack=self.ack)
 		pkt = IP(dst = self.server_ip) / tcp / Raw(load = data)
 		pkt.show()
-		ack_pkt = sr1(pkt, timeout=1)
+		ack_pkt = sr1(pkt)
 		self.seq = ack_pkt[TCP].ack
 
 
@@ -120,9 +125,15 @@ class Sender:
 if __name__ == "__main__":
 	sender = Sender()
 	if sender.connect("192.168.1.193"):
-		responder = Receiver(sender)
-		t = threading.Thread(target=responder, args=sender)
-		t.start()
+		try:
+			responder = Receiver(sender)
+			t = threading.Thread(target=responder)
+			t.setDaemon(True)
+			t.start()
+		except(KeyboardInterrupt, SystemExit):
+			threading.cleanup_stop_thread()
+			sys.exit()
+
 	while True:
 		msg = raw_input("> ")
 		sender.send_simple_message("aaaa")
