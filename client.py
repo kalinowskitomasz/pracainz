@@ -28,8 +28,8 @@ class Receiver(AnsweringMachine):
 		print "message: "
 
 	def is_request(self, req):
-		print "request"
-		return True
+		print "is request"
+	 	return (req[TCP].flags & PSH) and (req[TCP].flags & ACK)
 
 	def make_reply(self, req):
 		print "make reply: "
@@ -39,6 +39,32 @@ class Receiver(AnsweringMachine):
 		tcp = TCP(flags="A", sport=sender.source_port, dport=req[TCP].sport, seq=sender.seq, ack=sender.ack)
 		return ip/tcp
 
+	# def reply(self, req):
+	# 	print "make reply: "
+	# 	print req.summary()
+	# 	ip = IP(dst=sender.server_ip)
+	# 	sender.ack += len(req[TCP].payload)
+	# 	print "sender port %d, SEQ=%d, ACK=%d" % (sender.source_port,sender.seq, sender.ack)
+	# 	tcp = TCP(flags="AU", sport=sender.source_port, dport=req[TCP].sport, seq=sender.seq, ack=sender.ack)
+	# 	send(ip/tcp)
+
+################################################################
+
+class Receiver2:
+	def __init__(self, sender):
+		self.filter="tcp dst port %d" % sender.source_port
+
+	def on_packet(self, req):
+		print "make reply: "
+		print req.summary()
+		ip = IP(dst=sender.server_ip)
+		sender.ack += len(req[TCP].payload)
+		print "sender port %d, SEQ=%d, ACK=%d" % (sender.source_port,sender.seq, sender.ack)
+		tcp = TCP(flags="A", sport=sender.source_port, dport=req[TCP].sport, seq=1, ack=1)
+		send(ip/tcp)
+
+	def __call__(self):
+		sniff(filter=self.filter, prn=self.on_packet)
 
 ################################################################
 
