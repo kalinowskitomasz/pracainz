@@ -76,14 +76,13 @@ class Socket:
 		send(pkt_to_send)
 
 	def on_packet_received(self, pkt):
-		print "on packet received"
-		if pkt[TCP].flags & (PSH | ACK):
+		if (pkt[TCP].flags & PSH) and (pkt[TCP].flags & ACK):
+			print "on packet received"
 			ip = IP(dst=pkt[IP].src)
 			self.ack += len(pkt[TCP].payload)
 			print "seq = %d " % self.seq
 			tcp = TCP(flags="A", sport=SERVER_PORT, dport=pkt[TCP].sport, seq=self.seq, ack=self.ack)
 			ack_packet = ip/tcp
-			ack_packet.show()
 			return ack_packet
 
 	def send_message_to_all(self, pkt):
