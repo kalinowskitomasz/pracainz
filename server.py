@@ -9,6 +9,9 @@ States = enum(LISTENING=0, SYN_SENT=1, SYN_RECEIVED=2, ESTABLISHED=3)
 PktType = enum(SYN=0, SYNACK=1, ACK=2, PSH=3, RST=4)
 
 
+
+#############################################################
+
 class SocketManager:
 
 	def __init__(self):
@@ -38,10 +41,11 @@ class SocketManager:
 		port = pkt[TCP].sport
 		self.sockets[port] = Socket(pkt, self)
 
+	#############################################################
+
 	def send_message_to_all(self, pkt):
 		print "send message to all"
 		for port, sckt in self.sockets.iteritems():
-			#pass
 			sckt.send_packet(pkt)
 
 	#############################################################
@@ -65,6 +69,8 @@ class Socket:
 		self.ack = 0
 		self.seq = 0
 
+	#############################################################
+
 	def send_packet(self, pkt):
 		print "seq = %d" % self.seq
 		ip = IP(dst=self.ip)
@@ -74,6 +80,8 @@ class Socket:
 		self.seq += len(data)
 		print "packet to send: " + pkt_to_send.summary()
 		send(pkt_to_send)
+
+	#############################################################
 
 	def on_packet_received(self, pkt):
 		if (pkt[TCP].flags & PSH) and (pkt[TCP].flags & ACK):
@@ -85,10 +93,14 @@ class Socket:
 			ack_packet = ip/tcp
 			return ack_packet
 
+	#############################################################
+
 	def send_message_to_all(self, pkt):
 		# t = threading.Thread(target=self.socket_manager.send_message_to_all, args=pkt)
 		# t.start()
 		self.socket_manager.send_message_to_all(pkt)
+
+	#############################################################
 
 	def on_syn_received(self, pkt):
 		self.port = pkt[TCP].sport
@@ -99,6 +111,8 @@ class Socket:
 		tcp = TCP(flags="SA", sport=SERVER_PORT, dport=pkt[TCP].sport, seq=self.seq, ack=pkt[TCP].seq+1)
 		self.seq = 1
 		return ip / tcp
+
+	#############################################################
 
 	def __create_response(self, pkt):
 		pass

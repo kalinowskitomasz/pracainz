@@ -117,11 +117,24 @@ class Sender:
 
 	def send_simple_message(self, message):
 		data = message
-		tcp = TCP(options=[(0, "aaaa")], sport=self.source_port, dport=server_port, flags="PA", seq=self.seq, ack=self.ack)
-		pkt = IP(dst = self.server_ip) / tcp / Raw(load = data)
+		opt_message = self.encode_options_field(message)
+		tcp = TCP(options=[(0, opt_message)], sport=self.source_port, dport=server_port, flags="PA", seq=self.seq, ack=self.ack)
+		pkt = IP(dst=self.server_ip) / tcp / Raw(load=data)
 		pkt.show()
 		ack_pkt = sr1(pkt)
 		self.seq = ack_pkt[TCP].ack
+
+	def encode_options_field(self, message):
+		mask = random.randint(8, 255)
+		message_buffer = ""
+		for c in message:
+			char_int = ord(c)
+			message_buffer += chr(char_int ^ mask)
+			# message_buffer+=chr(charInt)
+			if len(message_buffer) == 38:
+				return message_buffer
+
+		return None
 
 	#############################################################
 
