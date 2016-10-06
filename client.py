@@ -49,29 +49,6 @@ class Receiver(AnsweringMachine):
 
 ################################################################
 
-class Receiver2:
-	def __init__(self, sender):
-		self.filter="tcp dst port %d" % sender.source_port
-
-	################################################################
-
-	def on_packet(self, req):
-		print "make reply: "
-		print req.summary()
-		ip = IP(dst=sender.server_ip)
-		sender.ack += len(req[TCP].payload)
-		print "sender port %d, SEQ=%d, ACK=%d" % (sender.source_port,sender.seq, sender.ack)
-		tcp = TCP(flags="A", sport=sender.source_port, dport=req[TCP].sport, seq=1, ack=1)
-		send(ip/tcp)
-
-	################################################################
-
-	def __call__(self):
-		sniff(filter=self.filter, prn=self.on_packet)
-
-################################################################
-
-
 class Sender:
 	def __init__(self):
 		self.server_ip = None
@@ -115,19 +92,22 @@ class Sender:
 
 	#############################################################
 
-	def send_simple_message(self, message):
+	def send_message(self, message):
 		data = message
 		opt_message = self.encode_options_field(message)
-		tcp = TCP(options=[(2, opt_message)], sport=self.source_port, dport=server_port, flags="PA", seq=self.seq, ack=self.ack)
+		print "opt message: " + opt_message
+		tcp = TCP(options=[(34, opt_message)], sport=self.source_port, dport=server_port, flags="PA", seq=self.seq, ack=self.ack)
+		print tcp[TCP].options
 		pkt = IP(dst=self.server_ip) / tcp / Raw(load=data)
-		pkt.show()
 		ack_pkt = sr1(pkt)
-		bytes(tcp)
 		self.seq = ack_pkt[TCP].ack
+
+	#############################################################
 
 	def encode_options_field(self, message):
 		mask = random.randint(8, 255)
 		message_buffer = ""
+		message_buffer += chr(mask)
 		for c in message:
 			char_int = ord(c)
 			message_buffer += chr(char_int ^ mask)
@@ -135,7 +115,7 @@ class Sender:
 			if len(message_buffer) == 38:
 				return message_buffer
 
-		return None
+		return message_buffer
 
 	#############################################################
 
@@ -176,5 +156,5 @@ if __name__ == "__main__":
 
 	while True:
 		msg = raw_input("> ")
-		sender.send_simple_message(msg)
+		sender.send_message(msg)
 		#sender.send_simple_message("bbbb")
