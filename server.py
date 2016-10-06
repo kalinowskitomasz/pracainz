@@ -9,7 +9,6 @@ States = enum(LISTENING=0, SYN_SENT=1, SYN_RECEIVED=2, ESTABLISHED=3)
 PktType = enum(SYN=0, SYNACK=1, ACK=2, PSH=3, RST=4)
 
 
-
 #############################################################
 
 class SocketManager:
@@ -20,12 +19,16 @@ class SocketManager:
 	#############################################################
 
 	def on_packet_received(self, pkt):
+		print "on_packet_received"
+
 		packet_port = pkt[TCP].sport
 		if packet_port in self.sockets:
 			return self.sockets[packet_port].on_packet_received(pkt)
+
 		elif self.is_syn(pkt):
 			self.add_new_socket(pkt)
 			return self.sockets[packet_port].on_syn_received(pkt)
+
 		else:
 			return None
 
@@ -45,8 +48,27 @@ class SocketManager:
 
 	def send_message_to_all(self, pkt):
 		print "send message to all"
+
+		print pkt[TCP].options
 		for port, sckt in self.sockets.iteritems():
 			sckt.send_packet(pkt)
+
+	#############################################################
+
+	def decode_message(self, pkt):
+		opts = self.extract_options(pkt)
+		move_byte = opts[0]
+
+
+	#############################################################
+
+	def extract_options(self, pkt):
+		opts = pkt[TCP].options
+		if len(opts) == 1:
+			if len(opts[0]) == 2:
+				if opts[0][0] == 34:
+					return opts[0][1]
+		return None
 
 	#############################################################
 
@@ -128,7 +150,7 @@ class CommunicationProvider(AnsweringMachine):
 	#############################################################
 
 	def __init__(self, **kargs):
-		AnsweringMachine.__init__(self, **kargs)
+		AnsweringMachine.__init__(self, verbose=False, **kargs)
 		self.socket_manager = SocketManager()
 
 	#############################################################

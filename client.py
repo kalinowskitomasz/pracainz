@@ -118,10 +118,11 @@ class Sender:
 	def send_simple_message(self, message):
 		data = message
 		opt_message = self.encode_options_field(message)
-		tcp = TCP(options=[(0, opt_message)], sport=self.source_port, dport=server_port, flags="PA", seq=self.seq, ack=self.ack)
+		tcp = TCP(options=[(2, opt_message)], sport=self.source_port, dport=server_port, flags="PA", seq=self.seq, ack=self.ack)
 		pkt = IP(dst=self.server_ip) / tcp / Raw(load=data)
 		pkt.show()
 		ack_pkt = sr1(pkt)
+		bytes(tcp)
 		self.seq = ack_pkt[TCP].ack
 
 	def encode_options_field(self, message):
