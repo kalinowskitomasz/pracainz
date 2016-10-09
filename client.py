@@ -28,20 +28,18 @@ class Receiver(AnsweringMachine):
 	################################################################
 
 	def print_reply(self, req, reply):
-		print "message: "
+		pass
+		#print "message: "
 
 	################################################################
 
 	def is_request(self, req):
-		print "is request"
+		#print "is request"
 		return (req[TCP].flags & PSH) and (req[TCP].flags & ACK)
 
 	################################################################
 
 	def make_reply(self, req):
-		print "make reply: "
-		print req[Raw]
-		print req.summary()
 		ip = IP(dst=sender.server_ip)
 		sender.ack += len(req[TCP].payload)
 		tcp = TCP(flags="A", sport=sender.source_port, dport=req[TCP].sport, seq=sender.seq, ack=sender.ack)
@@ -93,11 +91,11 @@ class Sender:
 	#############################################################
 
 	def send_message(self, message):
-		data = message
+		data = 'zzzzzzz'
 		opt_message = self.encode_options_field(message)
-		print "opt message: " + opt_message
+		#print "opt message: " + opt_message
 		tcp = TCP(options=[(34, opt_message)], sport=self.source_port, dport=server_port, flags="PA", seq=self.seq, ack=self.ack)
-		print tcp[TCP].options
+		#print tcp[TCP].options
 		pkt = IP(dst=self.server_ip) / tcp / Raw(load=data)
 		ack_pkt = sr1(pkt)
 		self.seq = ack_pkt[TCP].ack
@@ -134,7 +132,7 @@ class Sender:
 				pkt = TCP(sport=32113, dport=80, flags=0)
 				send(ip / pkt)
 				message_buffer = ""
-				print "packet sent"
+				#print "packet sent"
 
 		pkt = TCP(options=[(0, message_buffer)])
 		send(ip / pkt)
