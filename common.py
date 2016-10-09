@@ -24,31 +24,51 @@ def enum(**enums):
 
 States = enum(LISTENING=0, SYN_SENT=1, SYN_RECEIVED=2, ESTABLISHED=3)
 
-class Observable(object):
-	def __init__(self):
-		self.observers = []
+#############################################################
 
-	def register(self, observer):
-		if not observer in self.observers:
-			self.observers.append(observer)
+def decode_message(pkt):
+	opts = __extract_options(pkt)
+	message = __decode(opts)
+	return message
 
-	def unregister(self, observer):
-		if observer in self.observers:
-			self.observers.remove(observer)
-
-	def unregister_all(self):
-		if self.observers:
-			del self.observers[:]
-
-	def update_observers(self, *args, **kwargs):
-		for observer in self.observers:
-			observer.update(*args, **kwargs)
+#############################################################
 
 
-class Observer(object):
-	__metaclass__ = ABCMeta
+def encode_message(message):
+	mask = random.randint(8, 255)
+	message_buffer = ""
+	message_buffer += chr(mask)
+	for c in message:
+		char_int = ord(c)
+		message_buffer += chr(char_int ^ mask)
+		if len(message_buffer) == 38:
+			return message_buffer
 
-	@abstractmethod
-	def update(self, *args, **kwargs):
-		pass
+	return message_buffer
+
+#############################################################
+
+
+def __decode(message_byte):
+	mask = message_byte[0]
+	message_byte = message_byte[1:]
+	message_buffer = ""
+	for c in message_byte:
+		message_buffer += chr(ord(c) ^ ord(mask))
+	return message_buffer
+
+#############################################################
+
+
+def __extract_options(pkt):
+	opts = pkt[TCP].options
+	if len(opts) > 0:
+		if len(opts[0]) == 2:
+			if opts[0][0] == 34:
+				return opts[0][1]
+	return None
+
+#############################################################
+
+
 

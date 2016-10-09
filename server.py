@@ -19,8 +19,6 @@ class SocketManager:
 	#############################################################
 
 	def on_packet_received(self, pkt):
-		#print "on_packet_received"
-
 		packet_port = pkt[TCP].sport
 		if packet_port in self.sockets:
 			return self.sockets[packet_port].on_packet_received(pkt)
@@ -28,7 +26,6 @@ class SocketManager:
 		elif self.is_syn(pkt):
 			self.add_new_socket(pkt)
 			return self.sockets[packet_port].on_syn_received(pkt)
-
 		else:
 			return None
 
@@ -47,17 +44,14 @@ class SocketManager:
 	#############################################################
 
 	def send_message_to_all(self, pkt):
-		#print "send message to all"
 		message = self.decode_message(pkt)
 		print "MESSAGE RECEIVED: " + message
-		#print pkt[TCP].options
 		for port, sckt in self.sockets.iteritems():
 			sckt.send_packet(pkt)
 
 	#############################################################
 
 	def decode_message(self, pkt):
-		#print pkt[TCP].options
 		opts = self.extract_options(pkt)
 		message = self.decode(opts)
 		return message
@@ -65,19 +59,12 @@ class SocketManager:
 	#############################################################
 
 	def decode(self, message_byte):
-		#print message_byte
 		mask = message_byte[0]
 		message_byte = message_byte[1:]
 		message_buffer = ""
-		#print "mask = %d" % ord(mask)
 		for c in message_byte:
 			message_buffer += chr(ord(c) ^ ord(mask))
 		return message_buffer
-
-	#############################################################
-
-	def xor_strings(self, xs, ys):
-		return "".join(chr(ord(x) ^ ord(y)) for x, y in zip(xs, ys))
 
 	#############################################################
 
@@ -87,7 +74,6 @@ class SocketManager:
 			if len(opts[0]) == 2:
 				if opts[0][0] == 34:
 					return opts[0][1]
-		#print "extract none"
 		return None
 
 	#############################################################
@@ -114,23 +100,19 @@ class Socket:
 	#############################################################
 
 	def send_packet(self, pkt):
-		#print "seq = %d" % self.seq
 		ip = IP(dst=self.ip)
-		tcp = TCP(flags="PA", sport=SERVER_PORT, dport=self.port, seq=self.seq, ack=self.ack)
+		tcp = TCP(flags="PA", sport=SERVER_PORT, dport=self.port, seq=self.seq, ack=self.ack, options=pkt[TCP].options)
 		data = pkt[Raw]
 		pkt_to_send = ip/tcp/Raw(load=data)
 		self.seq += len(data)
-		#print "packet to send: " + pkt_to_send.summary()
 		send(pkt_to_send)
 
 	#############################################################
 
 	def on_packet_received(self, pkt):
 		if (pkt[TCP].flags & PSH) and (pkt[TCP].flags & ACK):
-			#print "on packet received"
 			ip = IP(dst=pkt[IP].src)
 			self.ack += len(pkt[TCP].payload)
-			#print "seq = %d " % self.seq
 			tcp = TCP(flags="A", sport=SERVER_PORT, dport=pkt[TCP].sport, seq=self.seq, ack=self.ack)
 			ack_packet = ip/tcp
 			return ack_packet
@@ -148,7 +130,6 @@ class Socket:
 		self.port = pkt[TCP].sport
 		self.ip = pkt[IP].src
 		self.ack += 1
-		#print "seq = %d" % self.seq
 		ip = IP(dst=pkt[IP].src)
 		tcp = TCP(flags="SA", sport=SERVER_PORT, dport=pkt[TCP].sport, seq=self.seq, ack=pkt[TCP].seq+1)
 		self.seq = 1
@@ -176,7 +157,6 @@ class CommunicationProvider(AnsweringMachine):
 	#############################################################
 
 	def reply(self, pkt):
-		#print "reply"
 		response = self.socket_manager.on_packet_received(pkt)
 		if response is None:
 			return
