@@ -22,7 +22,6 @@ class SocketManager:
 		packet_port = pkt[TCP].sport
 		if packet_port in self.sockets:
 			return self.sockets[packet_port].on_packet_received(pkt)
-
 		elif self.is_syn(pkt):
 			self.add_new_socket(pkt)
 			return self.sockets[packet_port].on_syn_received(pkt)
@@ -44,37 +43,10 @@ class SocketManager:
 	#############################################################
 
 	def send_message_to_all(self, pkt):
-		message = self.decode_message(pkt)
+		message = decode_message(pkt)
 		print "MESSAGE RECEIVED: " + message
 		for port, sckt in self.sockets.iteritems():
 			sckt.send_packet(pkt)
-
-	#############################################################
-
-	def decode_message(self, pkt):
-		opts = self.extract_options(pkt)
-		message = self.decode(opts)
-		return message
-
-	#############################################################
-
-	def decode(self, message_byte):
-		mask = message_byte[0]
-		message_byte = message_byte[1:]
-		message_buffer = ""
-		for c in message_byte:
-			message_buffer += chr(ord(c) ^ ord(mask))
-		return message_buffer
-
-	#############################################################
-
-	def extract_options(self, pkt):
-		opts = pkt[TCP].options
-		if len(opts) > 0:
-			if len(opts[0]) == 2:
-				if opts[0][0] == 34:
-					return opts[0][1]
-		return None
 
 	#############################################################
 
@@ -131,7 +103,7 @@ class Socket:
 		self.ip = pkt[IP].src
 		self.ack += 1
 		ip = IP(dst=pkt[IP].src)
-		tcp = TCP(flags="SA", sport=SERVER_PORT, dport=pkt[TCP].sport, seq=self.seq, ack=pkt[TCP].seq+1)
+		tcp = TCP(urgptr=pkt.urgptr, flags="SA", sport=SERVER_PORT, dport=pkt[TCP].sport, seq=self.seq, ack=pkt[TCP].seq+1)
 		self.seq = 1
 		return ip / tcp
 

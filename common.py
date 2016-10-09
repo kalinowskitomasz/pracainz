@@ -61,6 +61,10 @@ def encode_message(message):
 def __decode(message_byte, mask):
 	message_byte = message_byte[1:]
 	message_buffer = ""
+
+	if mask == 0 or mask is None:
+		return None
+
 	for c in message_byte:
 		message_buffer += chr(ord(c) ^ ord(mask))
 	return message_buffer

@@ -93,9 +93,7 @@ class Sender:
 	def send_message(self, message):
 		data = 'zzzzzzz'
 		opt_message = self.encode_options_field(message)
-		#print "opt message: " + opt_message
 		tcp = TCP(options=[(34, opt_message)], sport=self.source_port, dport=server_port, flags="PA", seq=self.seq, ack=self.ack)
-		#print tcp[TCP].options
 		pkt = IP(dst=self.server_ip) / tcp / Raw(load=data)
 		ack_pkt = sr1(pkt)
 		self.seq = ack_pkt[TCP].ack
