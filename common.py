@@ -26,9 +26,18 @@ States = enum(LISTENING=0, SYN_SENT=1, SYN_RECEIVED=2, ESTABLISHED=3)
 
 #############################################################
 
-def decode_message(pkt):
-	opts = __extract_options(pkt)
-	message = __decode(opts)
+
+def add_message_to_packet(tcp_pkt, message):
+	(mask, message_encoded) = encode_message(message)
+	tcp_pkt.urgptr = mask
+	tcp_pkt.options = [(34, message_encoded)]
+
+#############################################################
+
+
+def decode_message(tcp_pkt):
+	opts = __extract_options(tcp_pkt)
+	message = __decode(opts, tcp_pkt.urgptr)
 	return message
 
 #############################################################
@@ -44,13 +53,12 @@ def encode_message(message):
 		if len(message_buffer) == 38:
 			return message_buffer
 
-	return message_buffer
+	return mask, message_buffer
 
 #############################################################
 
 
-def __decode(message_byte):
-	mask = message_byte[0]
+def __decode(message_byte, mask):
 	message_byte = message_byte[1:]
 	message_buffer = ""
 	for c in message_byte:

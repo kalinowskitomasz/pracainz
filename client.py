@@ -102,43 +102,6 @@ class Sender:
 
 	#############################################################
 
-	def encode_options_field(self, message):
-		mask = random.randint(8, 255)
-		message_buffer = ""
-		message_buffer += chr(mask)
-		for c in message:
-			char_int = ord(c)
-			message_buffer += chr(char_int ^ mask)
-			# message_buffer+=chr(charInt)
-			if len(message_buffer) == 38:
-				return message_buffer
-
-		return message_buffer
-
-	#############################################################
-
-	def send(self):
-		mask = random.randint(8, 255)
-		ip = IP(src='192.168.1.162')
-		message = "lorem ipsum"
-		# message Buffer = chr(mask)
-		message_buffer = ""
-		for c in message:
-			char_int = ord(c)
-			message_buffer += chr(char_int ^ mask)
-			# message_buffer+=chr(charInt)
-			if len(message_buffer) == 38:
-				# pkt = TCP(options=[(0, message_buffer)],flags="A")
-				pkt = TCP(sport=32113, dport=80, flags=0)
-				send(ip / pkt)
-				message_buffer = ""
-				#print "packet sent"
-
-		pkt = TCP(options=[(0, message_buffer)])
-		send(ip / pkt)
-
-	#############################################################
-
 
 if __name__ == "__main__":
 	sender = Sender()
