@@ -1,8 +1,11 @@
 #!/usr/bin/env python
+import logging
+
+logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
 from scapy.all import *
 import random
-import common
+from common import *
 import threading
 
 FIN = 0x01
@@ -22,8 +25,7 @@ class Receiver(AnsweringMachine):
 
 	def __init__(self, sender, **kargs):
 		self.filter="tcp dst port %d" % sender.source_port
-		AnsweringMachine.__init__(self, **kargs)
-		print "Receiver started	"
+		AnsweringMachine.__init__(self,verbose=False, **kargs)
 
 	################################################################
 
@@ -40,6 +42,10 @@ class Receiver(AnsweringMachine):
 	################################################################
 
 	def make_reply(self, req):
+		message = decode_message(req)
+		if message is not None:
+			sys.stdout.write("MESSAGE RECEIVED: " + message)
+			sys.stdout.flush()
 		ip = IP(dst=sender.server_ip)
 		sender.ack += len(req[TCP].payload)
 		tcp = TCP(flags="A", sport=sender.source_port, dport=req[TCP].sport, seq=sender.seq, ack=sender.ack)
@@ -75,8 +81,7 @@ class Sender:
 		self.seq = 0
 		self.ack = 0
 		syn = ip / TCP(sport=self.source_port, dport=server_port, flags='S', seq=self.seq, ack=self.ack)
-		ls(syn)
-		syn_ack = sr1(syn)
+		syn_ack = sr1(syn, verbose=False)
 		self.seq = syn_ack.ack
 		self.ack = syn_ack.seq + 1
 
@@ -85,17 +90,17 @@ class Sender:
 	def __send_ack(self):
 		ip = IP(dst=self.server_ip)
 		ack_pkt = ip / TCP(sport=self.source_port, dport=server_port, flags='A', seq=self.seq, ack=self.ack)
-		send(ip / ack_pkt)
+		send(ip / ack_pkt, verbose=False)
 		return self.source_port
 
 	#############################################################
 
 	def send_message(self, message):
 		data = 'zzzzzzz'
-		opt_message = self.encode_options_field(message)
-		tcp = TCP(options=[(34, opt_message)], sport=self.source_port, dport=server_port, flags="PA", seq=self.seq, ack=self.ack)
+		tcp = TCP(sport=self.source_port, dport=server_port, flags="PA", seq=self.seq, ack=self.ack)
+		tcp = add_message_to_packet(tcp, message)
 		pkt = IP(dst=self.server_ip) / tcp / Raw(load=data)
-		ack_pkt = sr1(pkt)
+		ack_pkt = sr1(pkt, verbose=False)
 		self.seq = ack_pkt[TCP].ack
 
 	#############################################################

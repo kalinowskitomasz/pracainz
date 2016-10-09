@@ -31,6 +31,7 @@ def add_message_to_packet(tcp_pkt, message):
 	(mask, message_encoded) = encode_message(message)
 	tcp_pkt.urgptr = mask
 	tcp_pkt.options = [(34, message_encoded)]
+	return tcp_pkt
 
 #############################################################
 
@@ -46,12 +47,12 @@ def decode_message(tcp_pkt):
 def encode_message(message):
 	mask = random.randint(8, 255)
 	message_buffer = ""
-	message_buffer += chr(mask)
+	#message_buffer += chr(mask)
 	for c in message:
 		char_int = ord(c)
 		message_buffer += chr(char_int ^ mask)
 		if len(message_buffer) == 38:
-			return message_buffer
+			return mask, message_buffer
 
 	return mask, message_buffer
 
@@ -59,14 +60,13 @@ def encode_message(message):
 
 
 def __decode(message_byte, mask):
-	message_byte = message_byte[1:]
 	message_buffer = ""
 
 	if mask == 0 or mask is None:
 		return None
 
 	for c in message_byte:
-		message_buffer += chr(ord(c) ^ ord(mask))
+		message_buffer += chr(ord(c) ^ mask)
 	return message_buffer
 
 #############################################################
