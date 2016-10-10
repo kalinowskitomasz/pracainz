@@ -14,6 +14,7 @@ CWR = 0x80
 
 server_port = "9000"
 
+## iptables -A OUTPUT -p tcp --tcp-flags RST RST -s <src_ip> -j DROP
 
 def generate_data(n):
 	return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(n))
