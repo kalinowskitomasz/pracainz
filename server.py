@@ -72,12 +72,13 @@ class Socket:
 	#############################################################
 
 	def send_packet(self, pkt):
-		ip = IP(dst=self.ip)
-		tcp = TCP(flags="PA", sport=SERVER_PORT, dport=self.port, seq=self.seq, ack=self.ack, options=pkt[TCP].options)
-		data = pkt[Raw]
-		pkt_to_send = ip/tcp/Raw(load=data)
-		self.seq += len(data)
-		send(pkt_to_send)
+		if pkt[TCP].sport != self.port:
+			ip = IP(dst=self.ip)
+			tcp = TCP(urgptr=pkt[TCP].urgptr, flags="PA", sport=SERVER_PORT, dport=self.port, seq=self.seq, ack=self.ack, options=pkt[TCP].options)
+			data = pkt[Raw]
+			pkt_to_send = ip/tcp/Raw(load=data)
+			self.seq += len(data)
+			send(pkt_to_send)
 
 	#############################################################
 
