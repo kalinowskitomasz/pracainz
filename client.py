@@ -6,7 +6,7 @@ logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 import random
 from common import *
-import threading
+import threading,readline,sys
 
 FIN = 0x01
 SYN = 0x02
@@ -19,6 +19,7 @@ CWR = 0x80
 
 server_port = 82
 
+
 ################################################################
 
 class Receiver(AnsweringMachine):
@@ -29,23 +30,24 @@ class Receiver(AnsweringMachine):
 
 	################################################################
 
-	def print_reply(self, req, reply):
-		pass
-		#print "message: "
+	def is_request(self, req):
+		return (req[TCP].flags & PSH) and (req[TCP].flags & ACK)
 
 	################################################################
 
-	def is_request(self, req):
-		#print "is request"
-		return (req[TCP].flags & PSH) and (req[TCP].flags & ACK)
+	def print_reply(self, req, reply):
+		pass
 
 	################################################################
 
 	def make_reply(self, req):
 		message = decode_message(req)
 		if message is not None:
-			sys.stdout.write("MESSAGE RECEIVED: " + message)
+			sys.stdout.write('\r'+' '*(len(readline.get_line_buffer())+2)+'\r')
+			print("MESSAGE RECEIVED: " + message)
+			sys.stdout.write('> ' + readline.get_line_buffer())
 			sys.stdout.flush()
+
 		ip = IP(dst=sender.server_ip)
 		sender.ack += len(req[TCP].payload)
 		tcp = TCP(flags="A", sport=sender.source_port, dport=req[TCP].sport, seq=sender.seq, ack=sender.ack)
@@ -71,6 +73,7 @@ class Sender:
 	def connect(self, server_ip):
 		self.server_ip = server_ip
 		self.__send_syn()
+		print "connected to server"
 		return self.__send_ack()
 
 
