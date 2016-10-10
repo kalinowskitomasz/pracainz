@@ -19,7 +19,7 @@ CWR = 0x80
 
 server_port = 82
 
-lock = threading.lock()
+lock = threading.Lock()
 
 ################################################################
 
